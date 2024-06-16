@@ -1,19 +1,200 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Expense Tracker</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" media="screen" href="index.css" />
+    <!-- <link rel="stylesheet" type="text/css" media="screen" href="index.css" /> -->
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Lato&display=swap');
+        :root {
+            --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
 
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: rgb(0, 0, 0);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Lato', sans-serif;
+        }
+
+        .main-container {
+            margin: 30px auto;
+            width: 350px;
+            padding: 20px;
+            background: #d5c2c2;
+            border-radius: 8px;
+            box-shadow: var(--box-shadow);
+        }
+
+        h1, h2, h3, h4 {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        h3 {
+            border-bottom: 1px solid #bbb;
+            padding-bottom: 10px;
+            margin: 40px 0 10px;
+        }
+
+        h4 {
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .income-expense-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+        }
+
+        .income-expense-container > div {
+            flex: 1;
+            text-align: center;
+            background-color: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 0 5px;
+        }
+
+        .amount {
+            font-size: 20px;
+            margin: 5px 0;
+        }
+
+        .amount.positive {
+            color: #2ecc71;
+        }
+
+        .amount.negative {
+            color: #c0392b;
+        }
+
+        .input-control {
+            margin: 10px 0;
+        }
+
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+
+        input[type='text'], input[type='number'] {
+            border: 1px solid #dedede;
+            border-radius: 4px;
+            display: block;
+            font-size: 16px;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .add-btn {
+            background-color: #9c88ff;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: block;
+            font-size: 16px;
+            margin: 10px 0 30px;
+            padding: 10px;
+            width: 100%;
+            border-radius: 4px;
+        }
+
+        .add-btn:focus {
+            outline: 0;
+        }
+
+        .transaction-list {
+            list-style-type: none;
+            padding: 0;
+            
+        }
+
+        .transaction-list li {
+            background-color: #fff;
+            border-right: 5px solid;
+            box-shadow: var(--box-shadow);
+            color: #333;
+            display: flex;
+            
+            justify-content: space-between;
+            padding: 10px;
+            margin: 10px 0;
+            position: relative;
+            border-radius: 4px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+
+        .transaction-list li.positive {
+            border-right-color: #2ecc71;
+        }
+
+        .transaction-list li.negative {
+            border-right-color: #c0392b;
+        }
+
+        .remove-btn {
+            background-color: #e74c3c;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 20px;
+            padding: 2px 5px;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translate(-100%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .transaction-list li:hover .remove-btn {
+            opacity: 1;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        .alert {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            display: none;
+        }
+        .hist{
+            padding-left: 20px;
+           max-height: 200px;
+            overflow: auto;
+        }
+        
+    </style>
 </head>
-
 <body>
-    <h2>Expense Tracker</h2>
-
+    
     <div class="main-container">
+        <h2>Expense Tracker</h2>
         <h4>Your Balance</h4>
         <h1 id="total-balance">$0.00</h1>
 
@@ -29,11 +210,12 @@
         </div>
 
         <h3>History</h3>
-        <ul id="transaction-list" class="transaction-list">
-            
-        </ul>
+        <div class="hist">
+            <ul id="transaction-list" class="transaction-list"></ul>
+        </div>
 
         <h3>Add new transaction</h3>
+        <div id="alert" class="alert">Please add a description and amount</div>
         <form id="transaction-form">
             <div class="input-control">
                 <label for="description">Text</label>
@@ -47,239 +229,90 @@
         </form>
     </div>
 
-</body>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const balanceEl = document.getElementById('total-balance');
+            const incomeEl = document.getElementById('total-income');
+            const expenseEl = document.getElementById('total-expense');
+            const listEl = document.getElementById('transaction-list');
+            const form = document.getElementById('transaction-form');
+            const descriptionInput = document.getElementById('description');
+            const valueInput = document.getElementById('value');
+            const alertEl = document.getElementById('alert');
 
-</html>
+            let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const balanceEl = document.getElementById('total-balance');
-        const incomeEl = document.getElementById('total-income');
-        const expenseEl = document.getElementById('total-expense');
-        const listEl = document.getElementById('transaction-list');
-        const form = document.getElementById('transaction-form');
-        const descriptionInput = document.getElementById('description');
-        const valueInput = document.getElementById('value');
+            const updateDOM = () => {
+                listEl.innerHTML = '';
+                const amounts = transactions.map(t => t.amount);
+                const total = amounts.reduce((acc, amount) => acc + amount, 0).toFixed(2);
+                const income = amounts.filter(a => a > 0).reduce((acc, a) => acc + a, 0).toFixed(2);
+                const expense = amounts.filter(a => a < 0).reduce((acc, a) => acc + a, 0).toFixed(2);
 
-        let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+                balanceEl.textContent = `$${total}`;
+                incomeEl.textContent = `+$${income}`;
+                expenseEl.textContent = `-$${Math.abs(expense).toFixed(2)}`;
 
-        const updateDOM = () => {
-            listEl.innerHTML = '';
-            const amounts = transactions.map(t => t.amount);
-            const total = amounts.reduce((acc, amount) => acc + amount, 0).toFixed(2);
-            const income = amounts.filter(a => a > 0).reduce((acc, a) => acc + a, 0).toFixed(2);
-            const expense = amounts.filter(a => a < 0).reduce((acc, a) => acc + a, 0).toFixed(2);
-
-            balanceEl.textContent = `$${total}`;
-            incomeEl.textContent = `+$${income}`;
-            expenseEl.textContent = `-$${Math.abs(expense).toFixed(2)}`;
-
-            transactions.forEach(addTransactionToDOM);
-        };
-
-        const addTransactionToDOM = (transaction) => {
-            const sign = transaction.amount < 0 ? '-' : '+';
-            const item = document.createElement('li');
-            item.className = transaction.amount < 0 ? 'negative' : 'positive';
-            item.innerHTML = `
-                ${transaction.description} <span>${sign}${Math.abs(transaction.amount)}</span>
-                <button class="remove-btn" data-id="${transaction.id}">x</button>
-            `;
-            listEl.appendChild(item);
-        };
-
-        const addTransaction = (e) => {
-            e.preventDefault();
-            const description = descriptionInput.value.trim();
-            const amount = +valueInput.value.trim();
-
-            if (!description || !amount) {
-                alert('Please add a description and amount');
-                return;
-            }
-
-            const transaction = {
-                id: Date.now(),
-                description,
-                amount
+                transactions.forEach(addTransactionToDOM);
             };
 
-            transactions.push(transaction);
-            updateLocalStorage();
+            const addTransactionToDOM = (transaction) => {
+                const sign = transaction.amount < 0 ? '-' : '+';
+                const item = document.createElement('li');
+                item.className = transaction.amount < 0 ? 'negative' : 'positive';
+                item.innerHTML = `
+                    ${transaction.description} <span>${sign}${Math.abs(transaction.amount)}</span>
+                    <button class="remove-btn" data-id="${transaction.id}">x</button>
+                `;
+                listEl.appendChild(item);
+            };
+
+            const addTransaction = (e) => {
+                e.preventDefault();
+                const description = descriptionInput.value.trim();
+                const amount = +valueInput.value.trim();
+
+                if (!description || !amount) {
+                    alertEl.style.display = 'block';
+                    setTimeout(() => {
+                        alertEl.style.display = 'none';
+                    }, 3000);
+                    return;
+                }
+
+                const transaction = {
+                    id: Date.now(),
+                    description,
+                    amount
+                };
+
+                transactions.push(transaction);
+                updateLocalStorage();
+                updateDOM();
+                descriptionInput.value = '';
+                valueInput.value = '';
+            };
+
+            const removeTransaction = (id) => {
+                transactions = transactions.filter(t => t.id !== id);
+                updateLocalStorage();
+                updateDOM();
+            };
+
+            const updateLocalStorage = () => {
+                localStorage.setItem('transactions', JSON.stringify(transactions));
+            };
+
+            listEl.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-btn')) {
+                    const id = +e.target.getAttribute('data-id');
+                    removeTransaction(id);
+                }
+            });
+
+            form.addEventListener('submit', addTransaction);
             updateDOM();
-            descriptionInput.value = '';
-            valueInput.value = '';
-        };
-
-        const removeTransaction = (id) => {
-            transactions = transactions.filter(t => t.id !== id);
-            updateLocalStorage();
-            updateDOM();
-        };
-
-        const updateLocalStorage = () => {
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-        };
-
-        listEl.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-btn')) {
-                const id = +e.target.getAttribute('data-id');
-                removeTransaction(id);
-            }
         });
-
-        form.addEventListener('submit', addTransaction);
-        updateDOM();
-    });
-</script>
-<style>
-
-    @import url('https://fonts.googleapis.com/css?family=Lato&display=swap');
-    :root {
-        --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-
-    body {
-        background-color: #f7f7f7;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        margin: 0;
-        font-family: 'Lato', sans-serif;
-    }
-
-    .main-container {
-        margin: 30px auto;
-        width: 350px;
-    }
-
-    h1 {
-        letter-spacing: 1px;
-        margin: 0;
-    }
-
-    h3 {
-        border-bottom: 1px solid #bbb;
-        padding-bottom: 10px;
-        margin: 40px 0 10px;
-    }
-
-    h4 {
-        margin: 0;
-        text-transform: uppercase;
-    }
-
-    .income-expense-container {
-        background-color: #fff;
-        box-shadow: var(--box-shadow);
-        padding: 20px;
-        display: flex;
-        justify-content: space-between;
-        margin: 20px 0;
-    }
-
-    .income-expense-container>div {
-        flex: 1;
-        text-align: center;
-    }
-
-    .income-expense-container>div:first-of-type {
-        border-right: 1px solid #dedede;
-    }
-
-    .amount {
-        font-size: 20px;
-        letter-spacing: 1px;
-        margin: 5px 0;
-    }
-
-    .amount.positive {
-        color: #2ecc71;
-    }
-
-    .amount.negative {
-        color: #c0392b;
-    }
-
-    label {
-        display: inline-block;
-        margin: 10px 0;
-    }
-
-    input[type='text'], input[type='number'] {
-        border: 1px solid #dedede;
-        border-radius: 2px;
-        display: block;
-        font-size: 16px;
-        padding: 10px;
-        width: 100%;
-    }
-
-    .add-btn {
-        cursor: pointer;
-        background-color: #9c88ff;
-        box-shadow: var(--box-shadow);
-        color: #fff;
-        border: 0;
-        display: block;
-        font-size: 16px;
-        margin: 10px 0 30px;
-        padding: 10px;
-        width: 100%;
-    }
-
-    .add-btn:focus, .remove-btn:focus {
-        outline: 0;
-    }
-
-    .transaction-list {
-        list-style-type: none;
-        padding: 0;
-        margin-bottom: 40px;
-    }
-
-    .transaction-list li {
-        background-color: #fff;
-        box-shadow: var(--box-shadow);
-        color: #333;
-        display: flex;
-        justify-content: space-between;
-        position: relative;
-        padding: 10px;
-        margin: 10px 0;
-    }
-
-    .transaction-list li.positive {
-        border-right: 5px solid #2ecc71;
-    }
-
-    .transaction-list li.negative {
-        border-right: 5px solid #c0392b;
-    }
-
-    .remove-btn {
-        cursor: pointer;
-        background-color: #e74c3c;
-        border: 0;
-        color: #fff;
-        font-size: 20px;
-        line-height: 20px;
-        padding: 2px 5px;
-        position: absolute;
-        top: 50%;
-        left: 0;
-        transform: translate(-100%, -50%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    }
-
-    .transaction-list li:hover .remove-btn {
-        opacity: 1;
-    }
-</style>
+    </script>
+</body>
+</html>
